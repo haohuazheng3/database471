@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quotas History</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            padding: 20px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+        }
+
+        #quotaTable {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        #quotaTable th, #quotaTable td {
+            border: 1px solid #ddd;
+            padding: 15px;
+            text-align: left;
+        }
+
+        .deleteButton {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 5px;
+            transition: all 0.3s ease;
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+        .deleteButton:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Quotas History</h1>
+
+    <table id="quotaTable">
+        <tr>
+            <th>Quota Id</th>
+            <th>User Id</th>
+            <th>Remaining Quota</th>
+            <th>Total Quota</th>
+            <th>Action</th>
+        </tr>
+    </table>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDuAZ97iUSjCn8n7aAKgRJ06zlRsYj2-EU",
+            authDomain: "data-e5247.firebaseapp.com",
+            projectId: "data-e5247",
+            storageBucket: "data-e5247.appspot.com",
+            messagingSenderId: "229330100486",
+            appId: "1:229330100486:web:6c94e90393d244bb983e87",
+            measurementId: "G-74ZFVHBT1Q"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Function to get quotas from Firestore
+        async function getQuotas() {
+            const quotasCol = collection(db, 'Quotas');
+            const quotaSnapshot = await getDocs(quotasCol);
+            const quotaList = quotaSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+            return quotaList;
+        }
+
+        // Function to delete quota from Firestore
+        async function deleteQuota(quotaId) {
+            await deleteDoc(doc(db, 'Quotas', quotaId));
+        }
+
+        // Display quotas in the web page
+        getQuotas().then(quotas => {
+            const quotaTable = document.getElementById('quotaTable');
+            quotas.forEach(quota => {
+                const quotaRow = document.createElement('tr');
+                quotaRow.id = quota.id;
+                quotaRow.innerHTML = `
+                    <td>${quota.QuotaID}</td>
+                    <td>${quota.UserID}</td>
+                    <td>${quota.RemainingQuota}</td>
+                    <td>${quota.TotalQuota}</td>
+                    <td>
+                        <button class="deleteButton">Delete</button>
+                    </td>
+                `;
+                quotaTable.appendChild(quotaRow);
+            });
+
+            // Add event listener to delete button
+            document.querySelectorAll('.deleteButton').forEach(button => {
+                button.addEventListener('click', function() {
+                    if (confirm('Are you sure you want to delete this quota?')) {
+                        const quotaId = this.closest('tr').id;
+                        deleteQuota(quotaId).then(() => {
+                            document.getElementById(quotaId).remove();
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

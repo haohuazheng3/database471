@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GPT User Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            padding: 20px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+        }
+
+        #userForm {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 20px;
+            max-width: 500px;
+            margin: 20px auto;
+            background-color: #fff;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+            border-radius: 10px;
+        }
+
+        #userForm input[type="text"], #userForm input[type="password"] {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        #userForm input[type="submit"] {
+            padding: 10px;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #userForm input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+        #userTable {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        #userTable th, #userTable td {
+            border: 1px solid #ddd;
+            padding: 15px;
+            text-align: left;
+        }
+
+        .editButton, .deleteButton {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .editButton {
+            background-color: #ffc107;
+            color: #000;
+        }
+
+        .editButton:hover {
+            background-color: #d39e00;
+        }
+
+        .deleteButton {
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+        .deleteButton:hover {
+            background-color: #bd2130;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>GPT User Management</h1>
+
+    <form id="userForm">
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <input type="text" id="email" placeholder="Email">
+        <input type="text" id="languageSetting" placeholder="Language Setting">
+        <input type="text" id="themeSetting" placeholder="Theme Setting">
+        <input type="text" id="otherPersonalInfo" placeholder="Other Personal Info">
+        <input type="submit" value="Add User">
+    </form>
+
+    <table id="userTable">
+        <tr>
+            <th>Username</th>
+            <th>Password</th>
+            <th>Email</th>
+            <th>Language Setting</th>
+            <th>Theme Setting</th>
+            <th>Other Personal Info</th>
+            <th>Actions</th>
+        </tr>
+    </table>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-analytics.js";
+        import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDuAZ97iUSjCn8n7aAKgRJ06zlRsYj2-EU",
+            authDomain: "data-e5247.firebaseapp.com",
+            projectId: "data-e5247",
+            storageBucket: "data-e5247.appspot.com",
+            messagingSenderId: "229330100486",
+            appId: "1:229330100486:web:6c94e90393d244bb983e87",
+            measurementId: "G-74ZFVHBT1Q"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const db = getFirestore(app);
+
+        // Function to get users from Firestore
+        async function getUsers() {
+            const usersCol = collection(db, 'Users');
+            const userSnapshot = await getDocs(usersCol);
+            const userList = userSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+            return userList;
+        }
+
+        // Function to add user to Firestore
+        async function addUser(user) {
+            const usersCol = collection(db, 'Users');
+            const docRef = await addDoc(usersCol, user);
+            return docRef.id;
+        }
+
+        // Function to delete user from Firestore
+        async function deleteUser(id) {
+            await deleteDoc(doc(db, 'Users', id));
+        }
+
+        // Function to update user in Firestore
+        async function updateUser(id, updatedUser) {
+            const userDoc = doc(db, 'Users', id);
+            await updateDoc(userDoc, updatedUser);
+        }
+
+        // Display users in the web page
+        getUsers().then(users => {
+            const userTable = document.getElementById('userTable');
+            users.forEach(user => {
+                const userRow = document.createElement('tr');
+                userRow.id = user.id;
+                userRow.innerHTML = `
+                    <td>${user.Username}</td>
+                    <td>${user.Password}</td>
+                    <td>${user.Email}</td>
+                    <td>${user.LanguageSetting}</td>
+                    <td>${user.ThemeSetting}</td>
+                    <td>${user.OtherPersonalInfo}</td>
+                    <td>
+                        <button class="editButton">Edit</button>
+                        <button class="deleteButton">Delete</button>
+                    </td>
+                `;
+                userTable.appendChild(userRow);
+            });
+
+            // Add event listeners to buttons
+            document.querySelectorAll('.deleteButton').forEach(button => {
+                button.addEventListener('click', function() {
+                    const id = this.closest('tr').id;
+                    deleteUser(id).then(() => {
+                        document.getElementById(id).remove();
+                    });
+                });
+            });
+
+            document.querySelectorAll('.editButton').forEach(button => {
+                button.addEventListener('click', function() {
+                    const id = this.closest('tr').id;
+
+                    // 获取用户的当前信息
+                    const userRow = this.closest('tr');
+                    const username = userRow.cells[0].textContent;
+                    const password = userRow.cells[1].textContent;
+                    const email = userRow.cells[2].textContent;
+                    const languageSetting = userRow.cells[3].textContent;
+                    const themeSetting = userRow.cells[4].textContent;
+                    const otherPersonalInfo = userRow.cells[5].textContent;
+
+                    // 将信息填充到表单中
+                    document.getElementById('username').value = username;
+                    document.getElementById('password').value = password;
+                    document.getElementById('email').value = email;
+                    document.getElementById('languageSetting').value = languageSetting;
+                    document.getElementById('themeSetting').value = themeSetting;
+                    document.getElementById('otherPersonalInfo').value = otherPersonalInfo;
+
+                    // 将用户的ID存储在提交按钮的数据属性中
+                    const submitButton = document.getElementById('userForm').querySelector('input[type="submit"]');
+                    submitButton.value = 'Update User';
+                    submitButton.dataset.editingId = id;
+                });
+            });
+        });
+
+        // Add event listener to form
+        document.getElementById('userForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const email = document.getElementById('email').value;
+            const languageSetting = document.getElementById('languageSetting').value;
+            const themeSetting = document.getElementById('themeSetting').value;
+            const otherPersonalInfo = document.getElementById('otherPersonalInfo').value;
+            const user = {
+                Username: username,
+                Password: password,
+                Email: email,
+                LanguageSetting: languageSetting,
+                ThemeSetting: themeSetting,
+                OtherPersonalInfo: otherPersonalInfo,
+            };
+
+            const submitButton = this.querySelector('input[type="submit"]');
+            if (submitButton.value === 'Update User') {
+                // Updating user
+                const id = submitButton.dataset.editingId;
+                updateUser(id, user).then(() => {
+                    const userRow = document.getElementById(id);
+                    userRow.cells[0].textContent = username;
+                    userRow.cells[1].textContent = password;
+                    userRow.cells[2].textContent = email;
+                    userRow.cells[3].textContent = languageSetting;
+                    userRow.cells[4].textContent = themeSetting;
+                    userRow.cells[5].textContent = otherPersonalInfo;
+                    submitButton.value = 'Add User';
+                    delete submitButton.dataset.editingId;
+                });
+            } else {
+                // Adding user
+                addUser(user).then(id => {
+                    const userRow = document.createElement('tr');
+                    userRow.id = id;
+                    userRow.innerHTML = `
+                        <td>${username}</td>
+                        <td>${password}</td>
+                        <td>${email}</td>
+                        <td>${languageSetting}</td>
+                        <td>${themeSetting}</td>
+                        <td>${otherPersonalInfo}</td>
+                        <td>
+                            <button class="editButton">Edit</button>
+                            <button class="deleteButton">Delete</button>
+                        </td>
+                    `;
+                    document.getElementById('userTable').appendChild(userRow);
+                });
+            }
+
+            // Clear the form
+            this.reset();
+        });
+    </script>
+</body>
+</html>
